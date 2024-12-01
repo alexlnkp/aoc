@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
 #define NUMBER_SET_PATH "input/1.txt"
 
@@ -13,6 +14,7 @@ int comp(const void* a, const void* b) {
 }
 
 int main(void) {
+    clock_t start_time = clock();
     int* nums1 = calloc(NUM_SETS, sizeof(int));
     int* nums2 = calloc(NUM_SETS, sizeof(int));
 
@@ -38,14 +40,27 @@ int main(void) {
     qsort(nums1, NUM_SETS, sizeof(int), comp);
     qsort(nums2, NUM_SETS, sizeof(int), comp);
 
+    int* freq = calloc(nums2[NUM_SETS - 1], sizeof(int));
+
+    for (int i = 0; i < NUM_SETS; ++i) {
+        freq[nums2[i]] += (nums2[i] < nums2[NUM_SETS - 1]);
+    }
+
     int diff_sum = 0;
+    int similarity = 0;
     for (int i = 0; i < NUM_SETS; ++i) {
         diff_sum += abs(nums1[i] - nums2[i]);
+        similarity += nums1[i] * freq[nums1[i]];
     }
 
     printf("diffsum: %d\n", diff_sum);
+    printf("similarity: %d\n", similarity);
 
     free(nums1);
     free(nums2);
+
+    double elapsed_time = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+    printf("Done in %f seconds\n", elapsed_time);
+
     return 0;
 }
