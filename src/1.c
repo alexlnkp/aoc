@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <time.h>
+
+#include "benchmark.h"
 
 #define NUMBER_SET_PATH "input/1.txt"
 
@@ -14,7 +15,8 @@ int comp(const void* a, const void* b) {
 }
 
 int main(void) {
-    clock_t start_time = clock();
+    INIT_CLOCK();
+
     int* nums1 = calloc(NUM_SETS, sizeof(int));
     int* nums2 = calloc(NUM_SETS, sizeof(int));
 
@@ -59,8 +61,7 @@ int main(void) {
     free(nums1);
     free(nums2);
 
-    double elapsed_time = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-    printf("Done in %f seconds\n", elapsed_time);
+    GET_ELAPSED_TIME();
 
     return 0;
 }
