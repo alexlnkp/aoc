@@ -1,0 +1,18 @@
+Advent of Code 2024
+
+To compile:
+  1. run `cc -o nob nob.c`
+  2. run `./nob`
+
+Structure:
+  -   `src`   folder holds each day's challenge. For day 1,
+              the challenge's solution is `src/1.c`
+
+  -   `out`   folder holds each day's compiled challenge. For day 1,
+              the challenge's solution executable is `out/1`
+
+  -  `input`  folder holds input files for some challenges. For day 1,
+              the input is `input/1.txt`, which holds two sets of numbers.
+
+  - `include` folder holds some helper headers. For example, `include/benchmark.h`,
+              a header that is used for quick and simple benchmarking of code.
