@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "benchmark.h"
 
@@ -40,6 +41,63 @@ int is_decreasing(int *arr, int size) {
     return 1;
 }
 
+int is_safe_report(report_t* report) {
+    int score = 0;
+
+    for (int j = 0; j < report->num_levels - 1; ++j) {
+        unsigned diff = abs(report->levels[j + 1] - report->levels[j]);
+        score += (diff <= 3 && diff >= 1);
+    }
+
+    /* if the numbers in levels are ONLY increasing or ONLY decreasing,
+     * and every difference for every pair of numbers is correct per
+     * level, then it's a safe report. */
+    return (score == report->num_levels - 1) &&
+           (is_decreasing(report->levels, report->num_levels) ||
+            is_increasing(report->levels, report->num_levels));
+}
+
+int get_num_safe_reports(report_t* reports) {
+    int num_safe_reports = 0;
+
+    for (int i = 0; i < NUM_REPORTS; ++i) {
+        if (is_safe_report(&reports[i])) num_safe_reports++;
+    }
+
+    return num_safe_reports;
+}
+
+int get_num_safe_reports_damp(report_t* reports) {
+    int num_safe_reports = 0;
+
+    report_t modified_report;
+    /* i'm not proud of this solution, but it's better than having
+     * alloca, malloc or calloc within a loop itself. the 16 is
+     * just a magic number, and it should always be the most amount
+     * of elements a `levels` array can hold, or more. my reports
+     * had at most 8 of numbers per levels array, but it may vary */
+    modified_report.levels = alloca(16 * sizeof(int));
+
+    for (int i = 0; i < NUM_REPORTS; ++i) {
+        modified_report.num_levels = reports[i].num_levels - 1;
+
+        for (int j = -1; j < reports[i].num_levels; ++j) {
+            for (int k = 0, l = 0; k < reports[i].num_levels; ++k) {
+                /* if `j` (the ignore index) is -1, `k` will never be equal
+                 * to it, which effectively just copies the array. */
+                if (k == j) continue;
+                modified_report.levels[l++] = reports[i].levels[k];
+            }
+
+            if (is_safe_report(&modified_report)) {
+                num_safe_reports++; break;
+            }
+        }
+    }
+
+    return num_safe_reports;
+}
+
 int main(void) {
     INIT_CLOCK();
 
@@ -72,27 +130,8 @@ int main(void) {
         num_reports++;
     }
 
-    int num_safe_reports = 0;
-
-    for (int i = 0; i < NUM_REPORTS; ++i) {
-        int score = 0;
-
-        for (int j = 0; j < reports[i].num_levels - 1; ++j) {
-            unsigned diff = abs(reports[i].levels[j + 1] - reports[i].levels[j]);
-            score += (diff <= 3 && diff >= 1);
-        }
-
-        /* if the numbers in levels are ONLY increasing or ONLY decreasing,
-         * and every difference for every pair of numbers is correct per
-         * level, then it's a safe report. */
-        if (is_decreasing(reports[i].levels, reports[i].num_levels) ||
-            is_increasing(reports[i].levels, reports[i].num_levels)) {
-            num_safe_reports += (score == reports[i].num_levels - 1);
-        }
-
-    }
-
-    printf("num safe reports: %d\n", num_safe_reports);
+    printf("num safe reports (no dampening): %d\n", get_num_safe_reports(reports));
+    printf("num safe reports (dampening): %d\n", get_num_safe_reports_damp(reports));
 
     fclose(fp);
 
