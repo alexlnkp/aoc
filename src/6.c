@@ -7,6 +7,8 @@
 #define NUM_COLS 131
 #define NUM_ROWS 130
 
+#define MAX_MOVES_ALLOWED 5000
+
 typedef struct vec2 {
     int x, y;
 } vec2;
@@ -102,15 +104,66 @@ int count_char_in_board(char** board, char target) {
     return count;
 }
 
+int find_a_loop(guard_t* guard, char** board) {
+    int num_inf_loops = 0;
+    int turn_counter = 0;
+
+    guard_t original_guard = *guard;
+
+    for (int y = 0; y < NUM_ROWS; ++y) {
+        for (int x = 0; x < NUM_COLS; ++x) {
+            if (board[y][x] != '.') continue;
+            board[y][x] = '#';
+
+            while (1) {
+                vec2 next_pos = {
+                    .x = guard->position.x + guard->direction.x,
+                    .y = guard->position.y + guard->direction.y
+                };
+
+                if (next_pos.y >= NUM_ROWS || next_pos.y < 0 ||
+                    next_pos.x >= NUM_COLS || next_pos.x < 0) break;
+
+                if (board[next_pos.y][next_pos.x] == '#') {
+                    /* bonk and turn */
+
+                    turn_counter++;
+                    rotate_guard_clockwise(guard); continue;
+                }
+
+                /* i wish i was smart enough to find a better way. */
+                if (turn_counter >= MAX_MOVES_ALLOWED) {
+                    num_inf_loops++; break;
+                }
+
+                guard->position = next_pos;
+            }
+
+            board[y][x] = '.';
+
+            *guard = original_guard;
+            turn_counter = 0;
+        }
+    }
+
+    return num_inf_loops;
+}
+
 int main(void) {
     char** board = init_board();
+    read_into_board(board, MAP_INPUT);
+{
+    guard_t guard = {0};
+    find_guard(&guard, board);
+    simulate_guard(&guard, board);
+}
+    printf("distinct positions: %d\n", count_char_in_board(board, 'X'));
+
     read_into_board(board, MAP_INPUT);
 
     guard_t guard = {0};
     find_guard(&guard, board);
-    simulate_guard(&guard, board);
-
-    printf("distinct positions: %d\n", count_char_in_board(board, 'X'));
+    printf("num inf loops: %d\n", find_a_loop(&guard, board));
 
     free_board(board);
 
