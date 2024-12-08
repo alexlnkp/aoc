@@ -24,6 +24,11 @@ typedef struct stack_frame_t {
     int num_parts;
 } stack_frame_t;
 
+enum fitness_score {
+    FS_DEFAULT,
+    FS_WCONCAT
+};
+
 equation_list_t read_equations(const char* path) {
     FILE* fp = fopen(path, "r");
 
@@ -77,7 +82,13 @@ void free_equation_list(equation_list_t* eql) {
     eql->num_eqs = 0;
 }
 
-int fits_expected_res(equation_t* const eq) {
+long concat(long num1, long num2) {
+    long num1_off = 1;
+    while (num2 >= num1_off) num1_off *= 10;
+    return num1 * num1_off + num2;
+}
+
+int fits_expected_res(equation_t* const eq, int mode) {
     /* 2^(eq->num_parts) is only a theoretical limit.
     * in practice we never even exceed 64. */
     stack_frame_t* stack = malloc((1 << eq->num_parts) * sizeof(stack_frame_t));
@@ -97,6 +108,10 @@ int fits_expected_res(equation_t* const eq) {
 
         stack[++top] = (stack_frame_t){.value = frame.value + part, .index = frame.index + 1, .num_parts = frame.num_parts - 1};
         stack[++top] = (stack_frame_t){.value = frame.value * part, .index = frame.index + 1, .num_parts = frame.num_parts - 1};
+
+        if (mode != FS_WCONCAT) continue;
+
+        stack[++top] = (stack_frame_t){.value = concat(frame.value, part), .index = frame.index + 1, .num_parts = frame.num_parts - 1};
     }
 
     free(stack);
@@ -110,11 +125,17 @@ int main(void) {
     equation_list_t eql = read_equations(EQUATIONS_PATH);
 
     long long total_sum = 0;
+    long long total_sum_wconcat = 0;
 
-    for (int i = 0; i < eql.num_eqs; ++i)
-        total_sum += eql.eqs[i].expected_res * fits_expected_res(&eql.eqs[i]);
+    for (int i = 0; i < eql.num_eqs; ++i) {
+        long e_res = eql.eqs[i].expected_res;
+
+        total_sum += e_res * fits_expected_res(&eql.eqs[i], FS_DEFAULT);
+        total_sum_wconcat += e_res * fits_expected_res(&eql.eqs[i], FS_WCONCAT);
+    }
 
     printf("total sum: %lld\n", total_sum);
+    printf("total sum w concat: %lld\n", total_sum_wconcat);
 
     free_equation_list(&eql);
     GET_ELAPSED_TIME();
