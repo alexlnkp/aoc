@@ -6,7 +6,7 @@
 #define SRC_FOLDER "src"
 #define OUT_FOLDER "out"
 
-#define NUM_TASKS 7
+#define NUM_TASKS 8
 
 void compile_all_tasks(const char* defs) {
     char* out_path = alloca(64);
