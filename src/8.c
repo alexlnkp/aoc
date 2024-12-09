@@ -12,6 +12,11 @@ typedef struct antenna_t {
     int y, x;
 } antenna_t;
 
+enum antinode_mode {
+    ANM_DEFAULT,
+    ANM_RESONANT
+};
+
 char** read_map(const char* path) {
     FILE* fp = fopen(path, "r");
 
@@ -60,7 +65,7 @@ antenna_t* parse_antennas(char** map, size_t *n_antennas) {
     return antennas;
 }
 
-void insert_antinodes(char** map, antenna_t ant1, antenna_t ant2) {
+void insert_antinodes(char** map, antenna_t ant1, antenna_t ant2, int antinode_mode) {
     if (ant1.id != ant2.id) return;
 
     int dy = ant2.y - ant1.y;
@@ -79,12 +84,26 @@ void insert_antinodes(char** map, antenna_t ant1, antenna_t ant2) {
     if (an2_y >= 0 && an2_y < MAP_HEIGHT && an2_x >= 0 && an2_x < MAP_WIDTH) {
         if (map[an2_y][an2_x] != '#') map[an2_y][an2_x] = '#';
     }
+
+    if (antinode_mode != ANM_RESONANT) return;
+
+    while (an1_y >= 0 && an1_y < MAP_HEIGHT && an1_x >= 0 && an1_x < MAP_WIDTH) {
+        if (map[an1_y][an1_x] != '#') map[an1_y][an1_x] = '#';
+        an1_y -= dy; an1_x -= dx;
+    }
+
+    while (an2_y >= 0 && an2_y < MAP_HEIGHT && an2_x >= 0 && an2_x < MAP_WIDTH) {
+        if (map[an2_y][an2_x] != '#') map[an2_y][an2_x] = '#';
+        an2_y += dy; an2_x += dx;
+    }
 }
 
-int count_antinodes(char** map) {
+int count_antinodes(char** map, int mode) {
     int num_antinodes = 0;
-    for (int y = 0; y < MAP_HEIGHT; ++y) for (int x = 0; x < MAP_WIDTH; ++x)
-        if (map[y][x] == '#') num_antinodes++;
+    for (int y = 0; y < MAP_HEIGHT; ++y) for (int x = 0; x < MAP_WIDTH; ++x) {
+        if (mode == ANM_RESONANT && map[y][x] != '.') num_antinodes++;
+        else if (map[y][x] == '#') num_antinodes++;
+    }
 
     return num_antinodes;
 }
@@ -96,9 +115,14 @@ int main(void) {
     antenna_t* antennas = parse_antennas(map, &num_antennas);
 
     for (size_t i = 0; i < num_antennas; ++i) for (size_t j = i + 1; j < num_antennas; ++j)
-        insert_antinodes(map, antennas[i], antennas[j]);
+        insert_antinodes(map, antennas[i], antennas[j], ANM_DEFAULT);
 
-    printf("num antinodes: %d\n", count_antinodes(map));
+    printf("num antinodes:\t\t\t%d\n", count_antinodes(map, ANM_DEFAULT));
+
+    for (size_t i = 0; i < num_antennas; ++i) for (size_t j = i + 1; j < num_antennas; ++j)
+        insert_antinodes(map, antennas[i], antennas[j], ANM_RESONANT);
+
+    printf("num antinodes w/resonants:\t%d\n", count_antinodes(map, ANM_RESONANT));
 
     free_map(map);
     free(antennas);
